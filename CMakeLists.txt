@@ -1,4 +1,4 @@
-﻿# Copyright (c) Microsoft Corporation.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
 cmake_minimum_required (VERSION 3.11)
@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_EXAMPLE "Build example executable (on by default)" ON)
+option(BUILD_TESTS "Build test executable (on by default)" ON)
 
 add_library(AccessorFramework
     ${PROJECT_SOURCE_DIR}/src/Accessor.cpp
@@ -118,3 +119,9 @@ export(EXPORT AccessorFrameworkTargets
 )
 
 export(PACKAGE AccessorFramework)
+
+if (BUILD_TESTS)
+    add_definitions(-DUSE_GTEST)
+    enable_testing()
+    add_subdirectory(test)
+endif (BUILD_TESTS)
