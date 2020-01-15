@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <AccessorFramework/Accessor.h>
 
-namespace CommonAccessorTests
+namespace BasicAccessorTests
 {
     // A name cannot be empty, cannot contain periods, and cannot contain whitespace
     TEST(Accessor_NameIsValidTests, ValidName)
@@ -63,5 +63,18 @@ namespace CommonAccessorTests
 
         // Assert
         ASSERT_EQ(expectedTargetName, actualTargetName);
+    }
+
+    TEST(Accessor_GetImplTests, NotNull)
+    {
+        // Arrange
+        const std::string targetName = "TargetName";
+        AtomicAccessor target(targetName);
+
+        // Act
+        Accessor::Impl* targetImpl = target.GetImpl();
+
+        // Assert
+        ASSERT_NE(nullptr, targetImpl);
     }
 }

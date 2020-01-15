@@ -17,7 +17,12 @@ if(NOT googletest_POPULATED)
   add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 endif()
 
-add_executable(AccessorFrameworkTests src/CommonAccessorTests.cpp)
+add_executable(AccessorFrameworkTests
+    src/TestCases/BasicAccessorTests.cpp
+    src/TestCases/BasicHostTests.cpp
+    src/TestCases/SumVerifierTests.cpp
+)
+
 target_link_libraries(AccessorFrameworkTests
     gtest
     gmock_main
