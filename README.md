@@ -1,3 +1,4 @@
+[![Build Status](https://microsoft.visualstudio.com/Universal%20Print/_apis/build/status/microsoft.AccessorFramework?branchName=master)](https://microsoft.visualstudio.com/Universal%20Print/_build/latest?definitionId=47587&branchName=master)
 
 ## About
 
