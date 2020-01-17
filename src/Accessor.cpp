@@ -30,6 +30,11 @@ Accessor::Accessor(std::unique_ptr<Accessor::Impl> impl) :
 {
 }
 
+void Accessor::Initialize()
+{
+    // base implementation does nothing
+}
+
 int Accessor::ScheduleCallback(std::function<void()> callback, int delayInMilliseconds, bool repeat)
 {
     return this->m_impl->ScheduleCallback(callback, delayInMilliseconds, repeat);
@@ -88,7 +93,7 @@ CompositeAccessor::CompositeAccessor(
     const std::string& name,
     const std::vector<std::string>& inputPortNames,
     const std::vector<std::string>& outputPortNames)
-    : Accessor(std::make_unique<CompositeAccessor::Impl>(name, inputPortNames, outputPortNames))
+    : Accessor(std::make_unique<CompositeAccessor::Impl>(name, this, &CompositeAccessor::Initialize, inputPortNames, outputPortNames))
 {
 }
 
@@ -126,13 +131,18 @@ void CompositeAccessor::ConnectChildren(
     return static_cast<CompositeAccessor::Impl*>(this->GetImpl())->ConnectChildren(sourceChildName, sourceChildOutputPortName, destinationChildName, destinationChildInputPortName);
 }
 
+void CompositeAccessor::ChildrenChanged()
+{
+    static_cast<CompositeAccessor::Impl*>(this->GetImpl())->ChildrenChanged();
+}
+
 AtomicAccessor::AtomicAccessor(
     const std::string& name,
     const std::vector<std::string>& inputPortNames,
     const std::vector<std::string>& outputPortNames,
     const std::vector<std::string>& spontaneousOutputPortNames,
     const std::map<std::string, std::vector<InputHandler>>& inputHandlers)
-    : Accessor(std::make_unique<AtomicAccessor::Impl>(name, this, inputPortNames, outputPortNames, spontaneousOutputPortNames, inputHandlers, &AtomicAccessor::Initialize, &AtomicAccessor::Fire))
+    : Accessor(std::make_unique<AtomicAccessor::Impl>(name, this, &AtomicAccessor::Initialize, inputPortNames, outputPortNames, spontaneousOutputPortNames, inputHandlers, &AtomicAccessor::Fire))
 {
 }
 
@@ -169,11 +179,6 @@ void AtomicAccessor::AddInputHandler(const std::string& inputPortName, InputHand
 void AtomicAccessor::AddInputHandlers(const std::string& inputPortName, const std::vector<InputHandler>& handlers)
 {
     static_cast<AtomicAccessor::Impl*>(this->GetImpl())->AddInputHandlers(inputPortName, handlers);
-}
-
-void AtomicAccessor::Initialize()
-{
-    // base implementation does nothing
 }
 
 void AtomicAccessor::Fire()

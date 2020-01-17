@@ -29,7 +29,7 @@
 class Host::Impl : public CompositeAccessor::Impl
 {
 public:
-    Impl(const std::string& name, Host* container);
+    Impl(const std::string& name, Host* container, std::function<void(Accessor&)> initializeFunction);
     ~Impl();
     void ResetPriority() override;
     std::shared_ptr<Director> GetDirector() const override;
@@ -53,21 +53,23 @@ protected:
     void AddOutputPort(const std::string& portName) final;
     void AddOutputPorts(const std::vector<std::string>& portNames) final;
 
+    void ChildrenChanged() final;
+
 private:
     friend class Host;
 
     // Internal Methods
     void ValidateHostCanRun() const;
     void SetState(Host::State newState);
-    void ComputeAccessorPriorities();
-    void ComputeCompositeAccessorChildrenPriorities(
+    void ComputeAccessorPriorities(bool updateCallbacks = false);
+    int ComputeCompositeAccessorDepth(
         CompositeAccessor::Impl* compositeAccessor,
         std::map<const Port*, int>& portDepths,
-        std::map<int, std::vector<AtomicAccessor::Impl*>>& accessorDepths);
-    void ComputeAtomicAccessorPriority(
+        std::map<int, std::vector<Accessor::Impl*>>& accessorDepths);
+    int ComputeAtomicAccessorDepth(
         AtomicAccessor::Impl* atomicAccessor,
         std::map<const Port*, int>& portDepths,
-        std::map<int, std::vector<AtomicAccessor::Impl*>>& accessorDepths);
+        std::map<int, std::vector<Accessor::Impl*>>& accessorDepths);
     void ComputeAtomicAccessorInputPortDepth(
         const InputPort* inputPort,
         std::map<const Port*, int>& portDepths,
@@ -82,7 +84,6 @@ private:
     void NotifyListenersOfException(const std::exception& e);
     void NotifyListenersOfStateChange(Host::State oldState, Host::State newState);
 
-    Host* const m_container;
     std::atomic<Host::State> m_state;
     std::shared_ptr<Director> m_director;
     std::shared_ptr<CancellationToken> m_executionCancellationToken;

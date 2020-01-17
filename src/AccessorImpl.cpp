@@ -10,6 +10,21 @@ const int Accessor::Impl::DefaultAccessorPriority = INT_MAX;
 
 Accessor::Impl::~Impl() = default;
 
+bool Accessor::Impl::IsInitialized() const
+{
+    return this->m_initialized;
+}
+
+void Accessor::Impl::Initialize()
+{
+    if (this->m_initializeFunction != nullptr)
+    {
+        this->m_initializeFunction(*(this->m_container));
+    }
+
+    this->m_initialized = true;
+}
+
 void Accessor::Impl::SetParent(CompositeAccessor::Impl* parent)
 {
     BaseObject::SetParent(parent);
@@ -18,6 +33,12 @@ void Accessor::Impl::SetParent(CompositeAccessor::Impl* parent)
 int Accessor::Impl::GetPriority() const
 {
     return this->m_priority;
+}
+
+void Accessor::Impl::SetPriority(int priority)
+{
+    PRINT_VERBOSE("%s now has priority %d", this->GetFullName().c_str(), priority);
+    this->m_priority = priority;
 }
 
 void Accessor::Impl::ResetPriority()
@@ -161,6 +182,11 @@ IEvent* Accessor::Impl::GetLatestInput(const std::string& inputPortName) const
 
 void Accessor::Impl::SendOutput(const std::string& outputPortName, std::shared_ptr<IEvent> output)
 {
+    if (!(this->IsInitialized()))
+    {
+        throw std::logic_error("Outputs cannot be sent until the accessor is initialized");
+    }
+
     this->ScheduleCallback(
         [this, outputPortName, output]()
         {
@@ -170,9 +196,17 @@ void Accessor::Impl::SendOutput(const std::string& outputPortName, std::shared_p
         false /*repeat*/);
 }
 
-Accessor::Impl::Impl(const std::string& name, const std::vector<std::string>& inputPortNames, const std::vector<std::string>& connectedOutputPortNames) :
+Accessor::Impl::Impl(
+    const std::string& name,
+    Accessor* container,
+    std::function<void(Accessor&)> initializeFunction,
+    const std::vector<std::string>& inputPortNames,
+    const std::vector<std::string>& connectedOutputPortNames) :
     BaseObject(name),
-    m_priority(DefaultAccessorPriority)
+    m_initialized(false),
+    m_container(container),
+    m_priority(DefaultAccessorPriority),
+    m_initializeFunction(initializeFunction)
 {
     this->AddInputPorts(inputPortNames);
     this->AddOutputPorts(connectedOutputPortNames);

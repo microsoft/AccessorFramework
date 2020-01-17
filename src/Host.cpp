@@ -64,7 +64,7 @@ void Host::AdditionalSetup()
 }
 
 Host::Host(const std::string& name) :
-    CompositeAccessor(std::make_unique<Impl>(name, this))
+    CompositeAccessor(std::make_unique<Impl>(name, this, &Host::Initialize))
 {
 }
 

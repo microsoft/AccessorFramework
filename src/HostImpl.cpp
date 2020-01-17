@@ -8,16 +8,17 @@
 #include <cassert>
 #include <thread>
 
-static const int HostPriority = 0;
+static const int UpdateModelPriority = 0;
+static const int HostPriority = UpdateModelPriority + 1;
 
-Host::Impl::Impl(const std::string& name, Host* container) :
-    CompositeAccessor::Impl(name),
-    m_container(container),
+Host::Impl::Impl(const std::string& name, Host* container, std::function<void(Accessor&)> initializeFunction) :
+    CompositeAccessor::Impl(name, container, initializeFunction),
     m_state(Host::State::NeedsSetup),
     m_director(std::make_shared<Director>()),
     m_executionCancellationToken(nullptr),
     m_nextListenerId(0)
 {
+    this->m_priority = HostPriority;
 }
 
 Host::Impl::~Impl() = default;
@@ -53,7 +54,7 @@ void Host::Impl::Setup()
     }
 
     this->SetState(Host::State::SettingUp);
-    this->m_container->AdditionalSetup();
+    static_cast<Host*>(this->m_container)->AdditionalSetup();
     this->ComputeAccessorPriorities();
     this->Initialize();
     this->SetState(Host::State::ReadyToRun);
@@ -166,6 +167,29 @@ void Host::Impl::AddOutputPorts(const std::vector<std::string>& portNames)
     throw std::logic_error("Hosts are not allowed to have ports");
 }
 
+void Host::Impl::ChildrenChanged()
+{
+    this->m_priority = UpdateModelPriority;
+    this->ScheduleCallback(
+        [this]()
+        {
+            PRINT_DEBUG("%s is updating the model", this->GetName().c_str());
+            this->ComputeAccessorPriorities(true /*updateCallbacks*/);
+            for (auto child : this->GetChildren())
+            {
+                if (!(child->IsInitialized()))
+                {
+                    child->Initialize();
+                }
+            }
+        },
+        0 /*delayInMilliseconds*/,
+        false /*repeat*/
+    );
+
+    this->m_priority = HostPriority;
+}
+
 void Host::Impl::ResetPriority()
 {
     this->m_priority = HostPriority;
@@ -198,51 +222,54 @@ void Host::Impl::SetState(Host::State newState)
     }
 }
 
-void Host::Impl::ComputeAccessorPriorities()
+void Host::Impl::ComputeAccessorPriorities(bool updateCallbacks)
 {
-    std::vector<Accessor::Impl*> children = this->GetChildren();
-    for (auto child : children)
-    {
-        child->ResetPriority();
-    }
-
-    std::map<int, std::vector<AtomicAccessor::Impl*>> accessorDepths{};
+    std::map<int, std::vector<Accessor::Impl*>> accessorDepths{};
     std::map<const Port*, int> portDepths{};
-    this->ComputeCompositeAccessorChildrenPriorities(this, portDepths, accessorDepths);
-    int priority = HostPriority + 1;
+    this->ComputeCompositeAccessorDepth(this, portDepths, accessorDepths);
+    int priority = HostPriority;
     for (auto entry : accessorDepths)
     {
         priority = std::max(priority, entry.first);
-        for (auto atomicAccessor : entry.second)
+        for (auto accessor : entry.second)
         {
-            atomicAccessor->SetPriority(priority);
+            if (updateCallbacks)
+            {
+                int oldPriority = accessor->GetPriority();
+                this->m_director->HandlePriorityUpdate(oldPriority, priority);
+            }
+            
+            accessor->SetPriority(priority);
             ++priority;
         }
     }
 }
 
-void Host::Impl::ComputeCompositeAccessorChildrenPriorities(CompositeAccessor::Impl* compositeAccessor, std::map<const Port*, int>& portDepths, std::map<int, std::vector<AtomicAccessor::Impl*>>& accessorDepths)
+int Host::Impl::ComputeCompositeAccessorDepth(CompositeAccessor::Impl* compositeAccessor, std::map<const Port*, int>& portDepths, std::map<int, std::vector<Accessor::Impl*>>& accessorDepths)
 {
+    int minChildDepth = INT_MAX;
     for (auto child : compositeAccessor->GetChildren())
     {
+        int childDepth = 0;
         if (child->IsComposite())
         {
-            this->ComputeCompositeAccessorChildrenPriorities(static_cast<CompositeAccessor::Impl*>(child), portDepths, accessorDepths);
+            childDepth = this->ComputeCompositeAccessorDepth(static_cast<CompositeAccessor::Impl*>(child), portDepths, accessorDepths);
         }
         else
         {
-            this->ComputeAtomicAccessorPriority(static_cast<AtomicAccessor::Impl*>(child), portDepths, accessorDepths);
+            childDepth = this->ComputeAtomicAccessorDepth(static_cast<AtomicAccessor::Impl*>(child), portDepths, accessorDepths);
         }
+
+        minChildDepth = std::min(minChildDepth, childDepth);
     }
+
+    int accessorDepth = minChildDepth;
+    (accessorDepths[accessorDepth]).insert((accessorDepths[accessorDepth]).begin(), compositeAccessor);
+    return accessorDepth;
 }
 
-void Host::Impl::ComputeAtomicAccessorPriority(AtomicAccessor::Impl* atomicAccessor, std::map<const Port*, int>& portDepths, std::map<int, std::vector<AtomicAccessor::Impl*>>& accessorDepths)
+int Host::Impl::ComputeAtomicAccessorDepth(AtomicAccessor::Impl* atomicAccessor, std::map<const Port*, int>& portDepths, std::map<int, std::vector<Accessor::Impl*>>& accessorDepths)
 {
-    if (atomicAccessor->GetPriority() != DefaultAccessorPriority)
-    {
-        return;
-    }
-
     int maximumInputDepth = 0;
     for (auto inputPort : atomicAccessor->GetInputPorts())
     {
@@ -275,8 +302,9 @@ void Host::Impl::ComputeAtomicAccessorPriority(AtomicAccessor::Impl* atomicAcces
         }
     }
 
-    int accessorPriority = (atomicAccessor->HasOutputPorts() ? minimumOutputDepth : maximumInputDepth);
-    accessorDepths[accessorPriority].push_back(atomicAccessor);
+    int accessorDepth = (atomicAccessor->HasOutputPorts() ? minimumOutputDepth : maximumInputDepth);
+    accessorDepths[accessorDepth].push_back(atomicAccessor);
+    return accessorDepth;
 }
 
 void Host::Impl::ComputeAtomicAccessorInputPortDepth(const InputPort* inputPort, std::map<const Port*, int>& portDepths, std::set<const InputPort*>& visitedInputPorts, std::set<const OutputPort*>& visitedOutputPorts)

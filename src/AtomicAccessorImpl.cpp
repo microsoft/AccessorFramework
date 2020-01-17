@@ -17,18 +17,15 @@ static void SetSubtract(std::set<Key>& minuend, const std::set<Key>& subtrahend)
 AtomicAccessor::Impl::Impl(
     const std::string& name,
     AtomicAccessor* container,
+    std::function<void(Accessor&)> initializeFunction,
     const std::vector<std::string>& inputPortNames,
     const std::vector<std::string>& connectedOutputPortNames,
     const std::vector<std::string>& spontaneousOutputPortNames,
     std::map<std::string, std::vector<AtomicAccessor::InputHandler>> inputHandlers,
-    std::function<void(AtomicAccessor&)> initializeFunction,
     std::function<void(AtomicAccessor&)> fireFunction) :
-        Accessor::Impl(name, inputPortNames, connectedOutputPortNames),
-        m_container(container),
+        Accessor::Impl(name, container, initializeFunction, inputPortNames, connectedOutputPortNames),
         m_inputHandlers(inputHandlers),
-        m_initializeFunction(initializeFunction),
         m_fireFunction(fireFunction),
-        m_initialized(false),
         m_stateDependsOnInputPort(false)
 {
     this->AddSpontaneousOutputPorts(spontaneousOutputPortNames);
@@ -37,14 +34,6 @@ AtomicAccessor::Impl::Impl(
 bool AtomicAccessor::Impl::IsComposite() const
 {
     return false;
-}
-
-void AtomicAccessor::Impl::Initialize()
-{
-    if (this->m_initializeFunction != nullptr)
-    {
-        this->m_initializeFunction(*(this->m_container));
-    }
 }
 
 std::vector<const InputPort*> AtomicAccessor::Impl::GetEquivalentPorts(const InputPort* inputPort) const
@@ -86,12 +75,6 @@ std::vector<const OutputPort*> AtomicAccessor::Impl::GetDependentOutputPorts(con
     return std::vector<const OutputPort*>(dependentOutputPorts.begin(), dependentOutputPorts.end());
 }
 
-void AtomicAccessor::Impl::SetPriority(int priority)
-{
-    PRINT_VERBOSE("%s now has priority %d", this->GetFullName().c_str(), priority);
-    this->m_priority = priority;
-}
-
 void AtomicAccessor::Impl::ProcessInputs()
 {
     PRINT_DEBUG("%s is reacting to inputs on all ports", this->GetName().c_str());
@@ -118,7 +101,7 @@ void AtomicAccessor::Impl::ProcessInputs()
 
     if (this->m_fireFunction != nullptr)
     {
-        this->m_fireFunction(*(this->m_container));
+        this->m_fireFunction(*(static_cast<AtomicAccessor*>(this->m_container)));
     }
 
     PRINT_DEBUG("%s has finished reacting to all inputs", this->GetName().c_str());

@@ -18,7 +18,13 @@
 class CompositeAccessor::Impl : public Accessor::Impl
 {
 public:
-    explicit Impl(const std::string& name, const std::vector<std::string>& inputPortNames = {}, const std::vector<std::string>& connectedOutputPortNames = {});
+    explicit Impl(
+        const std::string& name,
+        CompositeAccessor* container,
+        std::function<void(Accessor&)> initializeFunction,
+        const std::vector<std::string>& inputPortNames = {},
+        const std::vector<std::string>& connectedOutputPortNames = {});
+
     bool HasChildWithName(const std::string& childName) const;
     Accessor::Impl* GetChild(const std::string& childName) const;
     std::vector<Accessor::Impl*> GetChildren() const;
@@ -40,6 +46,7 @@ protected:
         const std::string& sourceChildOutputPortName,
         const std::string& destinationChildName,
         const std::string& destinationChildInputPortName);
+    virtual void ChildrenChanged();
 
     // Internal Methods
     void ResetChildrenPriorities() const;
