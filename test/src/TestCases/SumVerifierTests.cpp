@@ -24,25 +24,17 @@ namespace SumVerifierTests
         void TearDown() override
         {
             this->target.reset(nullptr);
+            this->latestSum.reset();
+            this->error.reset();
         }
 
-        std::unique_ptr<SumVerifierHost> target = nullptr;
         std::string TargetName = "TargetHost";
+        std::unique_ptr<SumVerifierHost> target = nullptr;
         std::shared_ptr<int> latestSum = nullptr;
         std::shared_ptr<bool> error = nullptr;
     };
 
-    TEST_F(SumVerifierTest, SetUpModel)
-    {
-        // Act
-        target->Setup();
-        Host::State stateAfterSetup = target->GetState();
-
-        // Assert
-        ASSERT_EQ(Host::State::ReadyToRun, stateAfterSetup);
-    }
-
-    TEST_F(SumVerifierTest, Iterate)
+    TEST_F(SumVerifierTest, SumVerifier_Iterate)
     {
         // Arrange
         int numberOfIterations = 5;
@@ -51,13 +43,14 @@ namespace SumVerifierTests
         // Act
         target->Setup();
         target->Iterate(5);
+        target->Exit();
 
         // Assert
         ASSERT_FALSE(*error);
         ASSERT_EQ(expectedSum, *latestSum);
     }
 
-    TEST_F(SumVerifierTest, Run)
+    TEST_F(SumVerifierTest, SumVerifier_Run)
     {
         using namespace std::chrono_literals;
 

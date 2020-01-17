@@ -24,25 +24,17 @@ namespace DynamicSumVerifierTests
         void TearDown() override
         {
             this->target.reset(nullptr);
+            this->error.reset();
+            this->latestSum.reset();
         }
 
-        std::unique_ptr<DynamicSumVerifierHost> target = nullptr;
         std::string TargetName = "TargetHost";
+        std::unique_ptr<DynamicSumVerifierHost> target = nullptr;
         std::shared_ptr<int> latestSum = nullptr;
         std::shared_ptr<bool> error = nullptr;
     };
 
-    TEST_F(DynamicSumVerifierTest, SetUpModel)
-    {
-        // Act
-        target->Setup();
-        Host::State stateAfterSetup = target->GetState();
-
-        // Assert
-        ASSERT_EQ(Host::State::ReadyToRun, stateAfterSetup);
-    }
-
-    TEST_F(DynamicSumVerifierTest, Iterate)
+    TEST_F(DynamicSumVerifierTest, DynamicSumVerifier_Iterate)
     {
         /*
         Events:
@@ -67,13 +59,14 @@ namespace DynamicSumVerifierTests
         // Act
         target->Setup();
         target->Iterate(5);
+        target->Exit();
 
         // Assert
         ASSERT_FALSE(*error);
         ASSERT_EQ(expectedSum, *latestSum);
     }
 
-    TEST_F(DynamicSumVerifierTest, Run)
+    TEST_F(DynamicSumVerifierTest, DynamicSumVerifier_Run)
     {
         using namespace std::chrono_literals;
 
