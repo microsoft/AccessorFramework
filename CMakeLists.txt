@@ -13,7 +13,6 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(BUILD_EXAMPLE "Build example executable (on by default)" ON)
 option(BUILD_TESTS "Build test executable (on by default)" ON)
 
 add_library(AccessorFramework
@@ -50,19 +49,6 @@ set_target_properties(AccessorFramework PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
-
-if (BUILD_EXAMPLE)
-    add_executable(AccessorFrameworkExample
-        ${PROJECT_SOURCE_DIR}/examples/main.cpp
-        ${PROJECT_SOURCE_DIR}/examples/ExampleHost.cpp
-        ${PROJECT_SOURCE_DIR}/examples/IntegerAdder.cpp
-        ${PROJECT_SOURCE_DIR}/examples/SpontaneousCounter.cpp
-        ${PROJECT_SOURCE_DIR}/examples/SumVerifier.cpp
-    )
-
-	target_include_directories(AccessorFrameworkExample PRIVATE ${PROJECT_SOURCE_DIR}/examples)
-	target_link_libraries(AccessorFrameworkExample PRIVATE AccessorFramework)
-endif(BUILD_EXAMPLE)
 
 # Install
 
