@@ -17,7 +17,7 @@ jobs:
   workspace:
     clean: all
   variables:
-    UnitTests.ResultsFilename: 'UnitTestResults.xml'
+    UnitTests.ResultsPrefix: 'UnitTestResults'
   steps:
   - task: CmdLine@2
     displayName: 'Build with CMake and Ninja'
@@ -34,15 +34,17 @@ jobs:
     inputs:
       script: |
         echo on
-        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter=-SumVerifierTest.* --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%-1
-        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter=SumVerifierTest.* --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%-2
+        :: The *SumVerifier tests fail when run in the same test run. Since the tests use different classes and test fixtures,
+        :: this failure is most likely due to a bug in Google Test. Run tests separately for now as a workaround.
+        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter="-DynamicSumVerifierTest.*" --gtest_output=xml:%UNITTESTS_RESULTSPREFIX%-1.xml
+        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter="DynamicSumVerifierTest.*" --gtest_output=xml:%UNITTESTS_RESULTSPREFIX%-2.xml
       workingDirectory: $(Build.BinariesDirectory)
       failOnStderr: true
   - task: PublishTestResults@2
     displayName: 'Publish Unit Test Results'
     inputs:
       testResultsFormat: 'JUnit'
-      testResultsFiles: '**/$(UnitTests.ResultsFilename)*'
+      testResultsFiles: '**/$(UnitTests.ResultsPrefix)*.xml'
       searchFolder: $(Build.BinariesDirectory)
       mergeTestResults: true
       testRunTitle: '$(Build.BuildNumber).UnitTests'

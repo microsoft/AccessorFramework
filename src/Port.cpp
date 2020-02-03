@@ -123,9 +123,14 @@ void InputPort::DequeueLatestInput()
 
 void InputPort::ReceiveData(std::shared_ptr<IEvent> input)
 {
-    PRINT_VERBOSE("Input port %s is receiving event data at address %p", this->GetFullName().c_str(), input.get());
-    
     auto myParent = static_cast<Accessor::Impl*>(this->GetParent());
+    if (!(myParent->IsInitialized()))
+    {
+        PRINT_VERBOSE("Input port %s is dropping event data at address %p because its parent has not been initialized", this->GetFullName().c_str(), input.get());
+        return;
+    }
+
+    PRINT_VERBOSE("Input port %s is receiving event data at address %p", this->GetFullName().c_str(), input.get());
     if (myParent->IsComposite())
     {
         this->SendData(input);
@@ -161,6 +166,13 @@ bool OutputPort::IsSpontaneous() const
 
 void OutputPort::ReceiveData(std::shared_ptr<IEvent> input)
 {
+    auto myParent = static_cast<Accessor::Impl*>(this->GetParent());
+    if (!(myParent->IsInitialized()))
+    {
+        PRINT_VERBOSE("Output port %s is dropping event data at address %p because its parent has not been initialized", this->GetFullName().c_str(), input.get());
+        return;
+    }
+
     PRINT_VERBOSE("Output port %s is receiving event data at address %p", this->GetFullName().c_str(), input.get());
     this->SendData(input);
 }

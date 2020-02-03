@@ -21,7 +21,7 @@ public:
     {
     }
 
-    static const char* CounterValueOutput;
+    static constexpr char* CounterValueOutput = "CounterValue";
 
 private:
     void Initialize() override
@@ -33,7 +33,7 @@ private:
                 ++this->m_count;
             },
             m_intervalInMilliseconds,
-                true /*repeat*/);
+            true /*repeat*/);
 
         this->m_initialized = true;
     }
@@ -43,7 +43,5 @@ private:
     int m_callbackId;
     int m_count;
 };
-
-const char* SpontaneousCounter::CounterValueOutput = "CounterValue";
 
 #endif // SPONTANEOUSCOUNTER_H

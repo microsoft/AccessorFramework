@@ -29,7 +29,7 @@ public:
             });
     }
 
-    static const char* SumInput;
+    static constexpr char* SumInput = "Sum";
 
 private:
     void VerifySum(int actualSum) const
@@ -54,7 +54,5 @@ private:
     std::shared_ptr<int> m_latestSum;
     std::shared_ptr<bool> m_error;
 };
-
-const char* SumVerifier::SumInput = "Sum";
 
 #endif // SUMVERIFIER_H

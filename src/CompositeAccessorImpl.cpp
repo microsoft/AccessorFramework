@@ -5,8 +5,13 @@
 #include "AtomicAccessorImpl.h"
 #include "PrintDebug.h"
 
-CompositeAccessor::Impl::Impl(const std::string& name, const std::vector<std::string>& inputPortNames, const std::vector<std::string>& connectedOutputPortNames) :
-    Accessor::Impl(name, inputPortNames, connectedOutputPortNames),
+CompositeAccessor::Impl::Impl(
+    const std::string& name,
+    CompositeAccessor* container,
+    std::function<void(Accessor&)> initializeFunction,
+    const std::vector<std::string>& inputPortNames,
+    const std::vector<std::string>& connectedOutputPortNames) :
+    Accessor::Impl(name, container, initializeFunction, inputPortNames, connectedOutputPortNames),
     m_reactionRequested(false)
 {
 }
@@ -88,6 +93,7 @@ bool CompositeAccessor::Impl::IsComposite() const
 
 void CompositeAccessor::Impl::Initialize()
 {
+    Accessor::Impl::Initialize();
     for (auto child : this->m_orderedChildren)
     {
         child->Initialize();
@@ -132,6 +138,23 @@ void CompositeAccessor::Impl::ConnectChildren(
     Port::Connect(
         this->GetChild(sourceChildName)->GetOutputPort(sourceChildOutputPortName),
         this->GetChild(destinationChildName)->GetInputPort(destinationChildInputPortName));
+}
+
+void CompositeAccessor::Impl::ChildrenChanged()
+{
+    auto myParent = static_cast<CompositeAccessor::Impl*>(this->GetParent());
+    if (myParent != nullptr)
+    {
+        myParent->ChildrenChanged();
+    }
+
+    for (auto child : this->m_orderedChildren)
+    {
+        if (!(child->IsInitialized()))
+        {
+            child->Initialize();
+        }
+    }
 }
 
 void CompositeAccessor::Impl::ResetChildrenPriorities() const

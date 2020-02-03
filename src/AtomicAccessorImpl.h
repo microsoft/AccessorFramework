@@ -19,20 +19,18 @@ public:
     Impl(
         const std::string& name,
         AtomicAccessor* container,
+        std::function<void(Accessor&)> initializeFunction,
         const std::vector<std::string>& inputPortNames = {},
         const std::vector<std::string>& connectedOutputPortNames = {},
         const std::vector<std::string>& spontaneousOutputPortNames = {},
         std::map<std::string, std::vector<AtomicAccessor::InputHandler>> inputHandlers = {},
-        std::function<void(AtomicAccessor&)> initializeFunction = nullptr,
         std::function<void(AtomicAccessor&)> fireFunction = nullptr);
 
     // Internal Methods
     bool IsComposite() const override;
-    void Initialize() override;
     std::vector<const InputPort*> GetEquivalentPorts(const InputPort* inputPort) const;
     std::vector<const InputPort*> GetInputPortDependencies(const OutputPort* outputPort) const;
     std::vector<const OutputPort*> GetDependentOutputPorts(const InputPort* inputPort) const;
-    void SetPriority(int priority);
     void ProcessInputs();
 
 protected:
@@ -51,13 +49,10 @@ private:
     void FindEquivalentPorts(const InputPort* inputPort, std::set<const InputPort*>& equivalentPorts, std::set<const OutputPort*>& dependentPorts) const;
     void InvokeInputHandlers(const std::string& inputPortName);
 
-    AtomicAccessor* const m_container;
     std::map<const InputPort*, std::set<const OutputPort*>> m_forwardPrunedDependencies;
     std::map<const OutputPort*, std::set<const InputPort*>> m_backwardPrunedDependencies;
     std::map<std::string, std::vector<AtomicAccessor::InputHandler>> m_inputHandlers;
-    std::function<void(AtomicAccessor&)> m_initializeFunction;
     std::function<void(AtomicAccessor&)> m_fireFunction;
-    bool m_initialized;
     bool m_stateDependsOnInputPort;
 };
 

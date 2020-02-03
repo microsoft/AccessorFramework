@@ -16,8 +16,11 @@ class Accessor::Impl : public BaseObject
 {
 public:
     virtual ~Impl();
+    bool IsInitialized() const;
+    virtual void Initialize();
     void SetParent(CompositeAccessor::Impl* parent);
     int GetPriority() const;
+    void SetPriority(int priority);
     virtual void ResetPriority();
     virtual std::shared_ptr<Director> GetDirector() const;
     bool HasInputPorts() const;
@@ -30,8 +33,7 @@ public:
     bool operator>(const Accessor::Impl& other) const;
 
     virtual bool IsComposite() const = 0;
-    virtual void Initialize() = 0;
-
+    
     static const int DefaultAccessorPriority;
 
 protected:
@@ -49,7 +51,12 @@ protected:
     void SendOutput(const std::string& outputPortName, std::shared_ptr<IEvent> output);
 
     // Internal Methods
-    Impl(const std::string& name, const std::vector<std::string>& inputPortNames = {}, const std::vector<std::string>& connectedOutputPortNames = {});
+    Impl(
+        const std::string& name,
+        Accessor* container,
+        std::function<void(Accessor&)> initializeFunction,
+        const std::vector<std::string>& inputPortNames = {},
+        const std::vector<std::string>& connectedOutputPortNames = {});
     size_t GetNumberOfInputPorts() const;
     size_t GetNumberOfOutputPorts() const;
     std::vector<InputPort*> GetOrderedInputPorts() const;
@@ -59,6 +66,7 @@ protected:
     void AddOutputPort(const std::string& portName, bool isSpontaneous);
 
     int m_priority;
+    Accessor* const m_container;
 
 private:
     friend class Accessor;
@@ -67,6 +75,8 @@ private:
     void AlertNewInput(); // should only be called in InputPort::ReceiveData() by input ports belonging to this accessor
     void ValidatePortName(const std::string& portName) const;
 
+    bool m_initialized;
+    std::function<void(Accessor&)> m_initializeFunction;
     std::set<int> m_callbackIds;
     std::map<std::string, std::unique_ptr<InputPort>> m_inputPorts;
     std::vector<InputPort*> m_orderedInputPorts;

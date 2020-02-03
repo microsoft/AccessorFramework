@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <ctime>
+#include <set>
 #include <thread>
 
 static const long long DefaultNextExecutionTime = LLONG_MAX;
@@ -64,6 +65,26 @@ void Director::ClearScheduledCallback(int callbackId)
     }
 }
 
+void Director::HandlePriorityUpdate(int oldPriority, int newPriority)
+{
+    for (auto& i : this->m_scheduledCallbacks)
+    {
+        if (i.second.priority == oldPriority)
+        {
+            i.second.priority = newPriority;
+            for (auto it = this->m_callbackQueue.begin(); it != this->m_callbackQueue.end(); ++it)
+            {
+                if (*it == i.first)
+                {
+                    this->m_callbackQueue.erase(it);
+                    this->QueueScheduledCallback(i.first);
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void Director::Execute(std::shared_ptr<CancellationToken> executionCancellationToken, int numberOfIterations)
 {
     if (this->m_currentExecutionCancellationToken.get() == nullptr || this->m_currentExecutionCancellationToken->IsCanceled())
@@ -75,6 +96,7 @@ void Director::Execute(std::shared_ptr<CancellationToken> executionCancellationT
     int currentIteration = 0;
     while (!executionCancellationToken->IsCanceled() && executionResult->valid() && (numberOfIterations == 0 || currentIteration < numberOfIterations))
     {
+        PRINT_DEBUG("-----NEXT ROUND-----");
         bool wasCanceled = executionResult->get();
         if (wasCanceled && this->m_executionResult.get() == nullptr)
         {
@@ -277,7 +299,7 @@ void Director::ExecuteCallbacks()
         {
             this->m_scheduledCallbacks.at(callbackId).callbackFunction();
         }
-        catch (const std::exception& /*e*/)
+        catch (const std::exception& e)
         {
             this->RemoveScheduledCallbackFromMap(callbackId);
             throw;

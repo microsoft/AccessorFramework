@@ -36,7 +36,7 @@ public:
         int priority = INT_MAX);
 
     void ClearScheduledCallback(int callbackId);
-    
+    void HandlePriorityUpdate(int oldPriority, int newPriority);
     void Execute(std::shared_ptr<CancellationToken> executionCancellationToken, int numberOfIterations = 0);
 
 private:

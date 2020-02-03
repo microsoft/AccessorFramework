@@ -50,6 +50,9 @@ public:
 protected:
     Accessor(std::unique_ptr<Impl> impl);
 
+    // Called once during host setup (base implementation does nothing)
+    virtual void Initialize();
+
     // Schedules a new callback using the deterministic temporal semantics.
     // A callback identifier is returned that can be used to clear the callback.
     int ScheduleCallback(std::function<void()> callback, int delayInMilliseconds, bool repeat);
@@ -101,6 +104,7 @@ protected:
         const std::string& sourceChildOutputPortName,
         const std::string& destinationChildName,
         const std::string& destinationChildInputPortName);
+    void ChildrenChanged(); // Call after children/connections are added or removed at runtime
 };
 
 class AtomicAccessor : public Accessor
@@ -132,9 +136,6 @@ protected:
     // Register a function that is called when an input port receives an input
     void AddInputHandler(const std::string& inputPortName, InputHandler handler);
     void AddInputHandlers(const std::string& inputPortName, const std::vector<InputHandler>& handlers);
-
-    // Called once directly after accessor is constructed (base implementation does nothing)
-    virtual void Initialize();
 
     // Called once per reaction (base implementation does nothing)
     virtual void Fire();

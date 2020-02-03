@@ -21,6 +21,7 @@ add_executable(AccessorFrameworkTests
     src/TestCases/BasicAccessorTests.cpp
     src/TestCases/BasicHostTests.cpp
     src/TestCases/SumVerifierTests.cpp
+    src/TestCases/DynamicSumVerifierTests.cpp
 )
 
 target_link_libraries(AccessorFrameworkTests
