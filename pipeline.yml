@@ -11,7 +11,7 @@ pr:
 
 jobs:
 - job: Windows
-  displayName: 'Build on Windows'
+  displayName: 'Build for Windows x64'
   pool:
     vmImage: windows-2019
   workspace:
@@ -25,7 +25,7 @@ jobs:
       script: |
         echo on
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        "%DevEnvDir%CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -G "Ninja" -DCMAKE_BINARY_DIR="%BUILD_BINARIESDIRECTORY%" -Dgtest_force_shared_crt:BOOL="True" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin/HostX64/x64/cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin/HostX64/x64/cl.exe" -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_MAKE_PROGRAM="%DevEnvDir%CommonExtensions\Microsoft\CMake\Ninja\ninja.exe" "%BUILD_SOURCESDIRECTORY%"
+        "%DevEnvDir%CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -G "Ninja" -DCMAKE_BINARY_DIR="%BUILD_BINARIESDIRECTORY%" -Dgtest_force_shared_crt:BOOL="True" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin/HostX64/x64/cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin/HostX64/x64/cl.exe" -DCMAKE_BUILD_TYPE="Release" -DCMAKE_MAKE_PROGRAM="%DevEnvDir%CommonExtensions\Microsoft\CMake\Ninja\ninja.exe" "%BUILD_SOURCESDIRECTORY%"
         Ninja
       workingDirectory: $(Build.BinariesDirectory)
       failOnStderr: true
@@ -34,14 +34,15 @@ jobs:
     inputs:
       script: |
         echo on
-        
-        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%
+        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter=-SumVerifierTest.* --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%-1
+        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter=SumVerifierTest.* --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%-2
       workingDirectory: $(Build.BinariesDirectory)
       failOnStderr: true
   - task: PublishTestResults@2
+    displayName: 'Publish Unit Test Results'
     inputs:
       testResultsFormat: 'JUnit'
-      testResultsFiles: '**/$(UnitTests.ResultsFilename)'
+      testResultsFiles: '**/$(UnitTests.ResultsFilename)*'
       searchFolder: $(Build.BinariesDirectory)
       mergeTestResults: true
       testRunTitle: '$(Build.BuildNumber).UnitTests'
