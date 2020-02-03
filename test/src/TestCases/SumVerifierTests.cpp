@@ -1,6 +1,7 @@
 // Copyright(c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#include <cmath>
 #include <thread>
 #include <gtest/gtest.h>
 #include <AccessorFramework/Accessor.h>
@@ -56,7 +57,7 @@ namespace SumVerifierTests
 
         // Arrange
         auto sleepInterval = 5.5s;
-        int expectedSum = (floor(sleepInterval.count()) - 1) * 2;
+        int expectedSum = (std::floor(sleepInterval.count()) - 1) * 2;
 
         // Act
         target->Setup();

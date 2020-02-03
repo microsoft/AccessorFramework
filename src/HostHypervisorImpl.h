@@ -4,9 +4,11 @@
 #ifndef HOST_HYPERVISOR_IMPL_H
 #define HOST_HYPERVISOR_IMPL_H
 
-#include "AccessorFramework/Host.h"
 #include <atomic>
+#include <future>
 #include <map>
+#include <mutex>
+#include "AccessorFramework/Host.h"
 
 class HostHypervisor::Impl
 {
