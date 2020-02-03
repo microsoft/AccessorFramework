@@ -32,16 +32,6 @@ namespace SumVerifierTests
         std::shared_ptr<bool> error = nullptr;
     };
 
-    TEST_F(SumVerifierTest, SetUpModel)
-    {
-        // Act
-        target->Setup();
-        Host::State stateAfterSetup = target->GetState();
-
-        // Assert
-        ASSERT_EQ(Host::State::ReadyToRun, stateAfterSetup);
-    }
-
     TEST_F(SumVerifierTest, Iterate)
     {
         // Arrange

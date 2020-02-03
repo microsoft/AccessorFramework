@@ -11,7 +11,7 @@ pr:
 
 jobs:
 - job: Windows
-  displayName: 'Build on Windows'
+  displayName: 'Build for Windows x64'
   pool:
     vmImage: windows-2019
   workspace:
@@ -34,14 +34,15 @@ jobs:
     inputs:
       script: |
         echo on
-        
-        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%
+        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter=-SumVerifierTest.* --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%-1
+        "%BUILD_BINARIESDIRECTORY%\test\AccessorFrameworkTests.exe" --gtest_filter=SumVerifierTest.* --gtest_output=xml:%UNITTESTS_RESULTSFILENAME%-2
       workingDirectory: $(Build.BinariesDirectory)
       failOnStderr: true
   - task: PublishTestResults@2
+    displayName: 'Publish Unit Test Results'
     inputs:
       testResultsFormat: 'JUnit'
-      testResultsFiles: '**/$(UnitTests.ResultsFilename)'
+      testResultsFiles: '**/$(UnitTests.ResultsFilename)*'
       searchFolder: $(Build.BinariesDirectory)
       mergeTestResults: true
       testRunTitle: '$(Build.BuildNumber).UnitTests'
