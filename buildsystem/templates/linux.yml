@@ -1,0 +1,63 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+parameters:
+- name: arch
+  type: string
+
+jobs:
+- job: Linux_${{ parameters.arch }}
+  displayName: 'Build for Linux ${{ parameters.arch }}'
+  pool:
+    vmImage: ubuntu-18.04
+  workspace:
+    clean: all
+  variables:
+    Build.BuildDirectory: '$(Build.BinariesDirectory)\${{ parameters.arch }}'
+    CMakeArgs.x86: -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release" $(Build.SourcesDirectory)
+    CMakeArgs.x64: -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release" $(Build.SourcesDirectory)
+    CMakeArgs.arm: -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release" -DCMAKE_TOOLCHAIN_FILE="$(Build.SourcesDirectory)/buildsystem/toolchains/arm-linux-gnueabihf.cmake" $(Build.SourcesDirectory)
+    CMakeArgs.arm64: -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release" -DCMAKE_TOOLCHAIN_FILE="$(Build.SourcesDirectory)/buildsystem/toolchains/aarch64-linux-gnu.cmake" $(Build.SourcesDirectory)
+    UnitTests.ResultsPrefix: 'UnitTestResults-${{ parameters.arch }}'
+  steps:
+  - task: Bash@3
+    displayName: 'Install ARM Cross-Compile Tools'
+    condition: and(succeeded(), eq('${{ parameters.arch }}', 'arm'))
+    inputs:
+      targetType: 'inline'
+      script: sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+  - task: Bash@3
+    displayName: 'Install ARM64 Cross-Compile Tools'
+    condition: and(succeeded(), eq('${{ parameters.arch }}', 'arm64'))
+    inputs:
+      targetType: 'inline'
+      script: sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+  - task: CMake@1
+    displayName: 'Generate CMake Cache'
+    inputs:
+      workingDirectory: $(Build.BuildDirectory)
+      cmakeArgs: $(CMakeArgs.${{ parameters.arch }})
+  - task: CMake@1
+    displayName: 'Build with CMake'
+    inputs:
+      workingDirectory: $(Build.BuildDirectory)
+      cmakeArgs: --build .
+  - task: Bash@3
+    displayName: 'Run Unit Tests'
+    condition: and(succeeded(), or(eq('${{ parameters.arch }}', 'x86'), eq('${{ parameters.arch }}', 'x64')))
+    inputs:
+      workingDirectory: $(Build.BuildDirectory)
+      targetType: 'inline'
+      script: |
+        $(Build.BinariesDirectory)/${{ parameters.arch }}/test/AccessorFrameworkTests --gtest_filter="-DynamicSumVerifierTest.*" --gtest_output=xml:$(UnitTests.ResultsPrefix)-1.xml
+        $(Build.BinariesDirectory)/${{ parameters.arch }}/test/AccessorFrameworkTests --gtest_filter="DynamicSumVerifierTest.*" --gtest_output=xml:$(UnitTests.ResultsPrefix)-2.xml
+      failOnStderr: true
+  - task: PublishTestResults@2
+    displayName: 'Publish Unit Test Results'
+    condition: and(succeeded(), or(eq('${{ parameters.arch }}', 'x86'), eq('${{ parameters.arch }}', 'x64')))
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/$(UnitTests.ResultsPrefix)*.xml'
+      searchFolder: $(Build.BuildDirectory)
+      mergeTestResults: true
+      testRunTitle: '$(Build.BuildNumber).Linux_${{ parameters.arch }}.UnitTests'

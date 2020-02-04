@@ -1,7 +1,5 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 trigger:
 - master
@@ -10,15 +8,27 @@ pr:
 - master
 
 jobs:
-- template: build/templates/windows.yml
+- template: buildsystem/templates/windows.yml
   parameters:
     arch: 'x86'
-- template: build/templates/windows.yml
+- template: buildsystem/templates/windows.yml
   parameters:
     arch: 'x64'
-- template: build/templates/windows.yml
+- template: buildsystem/templates/windows.yml
   parameters:
     arch: 'arm'
-- template: build/templates/windows.yml
+- template: buildsystem/templates/windows.yml
+  parameters:
+    arch: 'arm64'
+- template: buildsystem/templates/linux.yml
+  parameters:
+    arch: 'x86'
+- template: buildsystem/templates/linux.yml
+  parameters:
+    arch: 'x64'
+- template: buildsystem/templates/linux.yml
+  parameters:
+    arch: 'arm'
+- template: buildsystem/templates/linux.yml
   parameters:
     arch: 'arm64'
