@@ -1,6 +1,7 @@
 // Copyright(c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#include <cmath>
 #include <thread>
 #include <gtest/gtest.h>
 #include <AccessorFramework/Accessor.h>
@@ -72,7 +73,7 @@ namespace DynamicSumVerifierTests
 
         // Arrange
         auto sleepInterval = 5.5s;
-        int expectedNumberOfIterations = floor(sleepInterval.count());
+        int expectedNumberOfIterations = std::floor(sleepInterval.count());
         int expectedSum = ((expectedNumberOfIterations - 1) * (expectedNumberOfIterations - 2)) / 2;
 
         // Act
