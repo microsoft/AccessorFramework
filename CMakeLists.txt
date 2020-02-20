@@ -4,9 +4,10 @@
 cmake_minimum_required (VERSION 3.11)
 
 project(AccessorFramework
-    VERSION 1.0
+    VERSION 1.0.0
     DESCRIPTION "A framework for using Accessors"
     LANGUAGES CXX
+    HOMEPAGE_URL "https://github.com/microsoft/AccessorFramework"
 )
 
 set(CMAKE_CXX_STANDARD 14)
@@ -67,12 +68,6 @@ set_target_properties(AccessorFramework PROPERTIES
     PDB_NAME_DEBUG ${AccessorFramework_NAME}${AccessorFramework_DEBUG_POSTFIX}
 )
 
-if (BUILD_TESTS)
-    add_definitions(-DUSE_GTEST)
-    enable_testing()
-    add_subdirectory(test)
-endif (BUILD_TESTS)
-
 # Install
 
 install(TARGETS AccessorFramework
@@ -132,3 +127,11 @@ install(
     ${PROJECT_BINARY_DIR}/cmake/AccessorFrameworkConfigVersion.cmake
     DESTINATION lib/cmake/AccessorFramework
 )
+
+# Tests
+
+if (BUILD_TESTS)
+    add_definitions(-DUSE_GTEST)
+    enable_testing()
+    add_subdirectory(test)
+endif (BUILD_TESTS)
