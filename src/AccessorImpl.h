@@ -40,6 +40,7 @@ protected:
     // Accessor Methods
     int ScheduleCallback(std::function<void()> callback, int delayInMilliseconds, bool repeat);
     void ClearScheduledCallback(int callbackId);
+    void ClearAllScheduledCallbacks();
     bool NewPortNameIsValid(const std::string& newPortName) const;
     virtual void AddInputPort(const std::string& portName);
     virtual void AddInputPorts(const std::vector<std::string>& portNames);

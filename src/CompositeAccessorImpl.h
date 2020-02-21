@@ -24,7 +24,7 @@ public:
         std::function<void(Accessor&)> initializeFunction,
         const std::vector<std::string>& inputPortNames = {},
         const std::vector<std::string>& connectedOutputPortNames = {});
-
+    ~Impl();
     bool HasChildWithName(const std::string& childName) const;
     Accessor::Impl* GetChild(const std::string& childName) const;
     std::vector<Accessor::Impl*> GetChildren() const;
@@ -39,6 +39,8 @@ protected:
     // CompositeAccessor Methods
     bool NewChildNameIsValid(const std::string& newChildName) const;
     void AddChild(std::unique_ptr<Accessor> child);
+    void RemoveChild(const std::string& childName);
+    void RemoveAllChildren();
     void ConnectMyInputToChildInput(const std::string& myInputPortName, const std::string& childName, const std::string& childInputPortName);
     void ConnectChildOutputToMyOutput(const std::string& childName, const std::string& childOutputPortName, const std::string& myOutputPortName);
     void ConnectChildren(

@@ -45,6 +45,11 @@ void Accessor::ClearScheduledCallback(int callbackId)
     this->m_impl->ClearScheduledCallback(callbackId);
 }
 
+void Accessor::ClearAllScheduledCallbacks()
+{
+    this->m_impl->ClearAllScheduledCallbacks();
+}
+
 bool Accessor::NewPortNameIsValid(const std::string& newPortName) const
 {
     return this->m_impl->NewPortNameIsValid(newPortName);
@@ -110,6 +115,16 @@ bool CompositeAccessor::NewChildNameIsValid(const std::string& newChildName) con
 void CompositeAccessor::AddChild(std::unique_ptr<Accessor> child)
 {
     static_cast<CompositeAccessor::Impl*>(this->GetImpl())->AddChild(std::move(child));
+}
+
+void CompositeAccessor::RemoveChild(const std::string& childName)
+{
+    static_cast<CompositeAccessor::Impl*>(this->GetImpl())->RemoveChild(childName);
+}
+
+void CompositeAccessor::RemoveAllChildren()
+{
+    static_cast<CompositeAccessor::Impl*>(this->GetImpl())->RemoveAllChildren();
 }
 
 void CompositeAccessor::ConnectMyInputToChildInput(const std::string& myInputPortName, const std::string& childName, const std::string& childInputPortName)

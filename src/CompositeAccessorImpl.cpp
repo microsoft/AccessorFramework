@@ -16,6 +16,12 @@ CompositeAccessor::Impl::Impl(
 {
 }
 
+CompositeAccessor::Impl::~Impl()
+{
+    // base class dtor will clear all scheduled callbacks first
+    this->RemoveAllChildren();
+}
+
 bool CompositeAccessor::Impl::HasChildWithName(const std::string& childName) const
 {
     return (this->m_children.find(childName) != this->m_children.end());
@@ -48,7 +54,9 @@ void CompositeAccessor::Impl::ScheduleReaction(Accessor::Impl* child, int priori
     {
         this->m_reactionRequested = true;
         this->m_childEventQueue.push(child);
-        this->GetDirector()->ScheduleCallback(
+
+        auto director = this->GetDirector();
+        director->ScheduleCallback(
             [this]() { this->ProcessChildEventQueue(); },
             0 /*delayInMilliseconds*/,
             false /*repeat*/,
@@ -117,6 +125,29 @@ void CompositeAccessor::Impl::AddChild(std::unique_ptr<Accessor> child)
     child->GetImpl()->SetParent(this);
     this->m_children.emplace(childName, std::move(child));
     this->m_orderedChildren.push_back(this->m_children.at(childName)->GetImpl());
+}
+
+void CompositeAccessor::Impl::RemoveChild(const std::string& childName)
+{
+    for (auto it = this->m_orderedChildren.begin(); it != this->m_orderedChildren.end(); ++it)
+    {
+        if ((*it)->GetName() == childName)
+        {
+            this->m_orderedChildren.erase(it);
+            break;
+        }
+    }
+
+    this->m_children.erase(childName);
+}
+
+void CompositeAccessor::Impl::RemoveAllChildren()
+{
+    while (!this->m_orderedChildren.empty())
+    {
+        Accessor::Impl* child = *(this->m_orderedChildren.begin());
+        this->RemoveChild(child->GetName());
+    }
 }
 
 void CompositeAccessor::Impl::ConnectMyInputToChildInput(const std::string& myInputPortName, const std::string& childName, const std::string& childInputPortName)
