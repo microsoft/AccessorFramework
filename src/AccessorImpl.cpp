@@ -8,7 +8,10 @@
 
 const int Accessor::Impl::DefaultAccessorPriority = INT_MAX;
 
-Accessor::Impl::~Impl() = default;
+Accessor::Impl::~Impl()
+{
+    this->ClearAllScheduledCallbacks();
+}
 
 bool Accessor::Impl::IsInitialized() const
 {
@@ -113,7 +116,8 @@ int Accessor::Impl::ScheduleCallback(
     int delayInMilliseconds,
     bool repeat)
 {
-    int callbackId = this->GetDirector()->ScheduleCallback(
+    auto director = this->GetDirector();
+    int callbackId = director->ScheduleCallback(
         callback,
         delayInMilliseconds,
         repeat,
@@ -124,8 +128,22 @@ int Accessor::Impl::ScheduleCallback(
 
 void Accessor::Impl::ClearScheduledCallback(int callbackId)
 {
-    this->GetDirector()->ClearScheduledCallback(callbackId);
+    auto director = this->GetDirector();
+    if (director.get() != nullptr)
+    {
+        director->ClearScheduledCallback(callbackId);
+    }
+
     this->m_callbackIds.erase(callbackId);
+}
+
+void Accessor::Impl::ClearAllScheduledCallbacks()
+{
+    while (!this->m_callbackIds.empty())
+    {
+        int callbackId = *(this->m_callbackIds.begin());
+        this->ClearScheduledCallback(callbackId);
+    }
 }
 
 bool Accessor::Impl::NewPortNameIsValid(const std::string& newPortName) const

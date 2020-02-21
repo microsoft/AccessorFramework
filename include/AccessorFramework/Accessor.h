@@ -60,6 +60,9 @@ protected:
     // Clears the callback with the given ID
     void ClearScheduledCallback(int callbackId);
 
+    // Clears all callbacks for this Accessor
+    void ClearAllScheduledCallbacks();
+
     // Port names cannot be empty, and an accessor can have only one port with a given name
     bool NewPortNameIsValid(const std::string& newPortName) const;
 
@@ -97,6 +100,8 @@ protected:
     // Child names cannot be empty or the same as the parent's name, and a parent can have only one child with a given name
     bool NewChildNameIsValid(const std::string& newChildName) const;
     void AddChild(std::unique_ptr<Accessor> child);
+    void RemoveChild(const std::string& childName);
+    void RemoveAllChildren();
     void ConnectMyInputToChildInput(const std::string& myInputPortName, const std::string& childName, const std::string& childInputPortName);
     void ConnectChildOutputToMyOutput(const std::string& childName, const std::string& childOutputPortName, const std::string& myOutputPortName);
     void ConnectChildren(

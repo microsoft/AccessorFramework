@@ -27,6 +27,7 @@ class Port : public BaseObject
 {
 public:
     Port(const std::string& name, Accessor::Impl* owner);
+    ~Port();
     Accessor::Impl* GetOwner() const;
     virtual bool IsSpontaneous() const;
     bool IsConnectedToSource() const;
@@ -37,6 +38,8 @@ public:
     virtual void ReceiveData(std::shared_ptr<IEvent> data) = 0;
 
     static void Connect(Port* source, Port* destination);
+    static void Disconnect(Port* source, Port* destination);
+    static void DisconnectAll(Port* port);
 
 private:
     static void ValidateConnection(Port* source, Port* destination);

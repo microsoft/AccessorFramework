@@ -11,6 +11,11 @@ Port::Port(const std::string& name, Accessor::Impl* owner) :
 {
 }
 
+Port::~Port()
+{
+    Port::DisconnectAll(this);
+}
+
 Accessor::Impl* Port::GetOwner() const
 {
     return static_cast<Accessor::Impl*>(this->GetParent());
@@ -57,6 +62,37 @@ void Port::Connect(Port* source, Port* destination)
     PRINT_VERBOSE("Source port '%s' is connecting to destination port '%s'", source->GetFullName().c_str(), destination->GetFullName().c_str());
     destination->m_source = source;
     source->m_destinations.push_back(destination);
+}
+
+void Port::Disconnect(Port* source, Port* destination)
+{
+    if (destination->m_source == source)
+    {
+        for (auto it = source->m_destinations.begin(); it != source->m_destinations.end(); ++it)
+        {
+            if (*it == destination)
+            {
+                source->m_destinations.erase(it);
+                break;
+            }
+        }
+
+        destination->m_source = nullptr;
+    }
+}
+
+void Port::DisconnectAll(Port* port)
+{
+    if (port->IsConnectedToSource())
+    {
+        Port::Disconnect(port->m_source, port);
+    }
+
+    while(!port->m_destinations.empty())
+    {
+        Port* destination = *(port->m_destinations.begin());
+        Port::Disconnect(port, destination);
+    }
 }
 
 void Port::ValidateConnection(Port* source, Port* destination)

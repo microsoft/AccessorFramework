@@ -23,7 +23,7 @@ Director::Director() :
 
 Director::~Director()
 {
-    this->CancelNextExecution();
+    this->Reset();
 }
 
 int Director::ScheduleCallback(
