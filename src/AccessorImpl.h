@@ -22,7 +22,7 @@ public:
     int GetPriority() const;
     void SetPriority(int priority);
     virtual void ResetPriority();
-    virtual std::shared_ptr<Director> GetDirector() const;
+    virtual Director* GetDirector() const;
     bool HasInputPorts() const;
     bool HasOutputPorts() const;
     InputPort* GetInputPort(const std::string& portName) const;

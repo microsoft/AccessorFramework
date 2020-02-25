@@ -5,7 +5,6 @@
 #define HOST_IMPL_H
 
 #include "AccessorFramework/Host.h"
-#include "CancellationToken.h"
 #include "CompositeAccessorImpl.h"
 #include "Director.h"
 #include <atomic>
@@ -32,7 +31,7 @@ public:
     Impl(const std::string& name, Host* container, std::function<void(Accessor&)> initializeFunction);
     ~Impl();
     void ResetPriority() override;
-    std::shared_ptr<Director> GetDirector() const override;
+    Director* GetDirector() const override;
 
 protected:
     // Host Methods
@@ -85,8 +84,7 @@ private:
     void NotifyListenersOfStateChange(Host::State oldState, Host::State newState);
 
     std::atomic<Host::State> m_state;
-    std::shared_ptr<Director> m_director;
-    std::shared_ptr<CancellationToken> m_executionCancellationToken;
+    std::unique_ptr<Director> m_director;
     std::map<int, std::weak_ptr<Host::EventListener>> m_listeners;
     int m_nextListenerId;
 

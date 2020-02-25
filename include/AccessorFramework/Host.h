@@ -65,8 +65,6 @@ private:
     using CompositeAccessor::AddInputPorts;
     using CompositeAccessor::AddOutputPort;
     using CompositeAccessor::AddOutputPorts;
-
-    std::unique_ptr<Impl> m_impl;
 };
 
 class HostHypervisor

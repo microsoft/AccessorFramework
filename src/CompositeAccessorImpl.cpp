@@ -18,7 +18,6 @@ CompositeAccessor::Impl::Impl(
 
 CompositeAccessor::Impl::~Impl()
 {
-    // base class dtor will clear all scheduled callbacks first
     this->RemoveAllChildren();
 }
 
@@ -54,9 +53,7 @@ void CompositeAccessor::Impl::ScheduleReaction(Accessor::Impl* child, int priori
     {
         this->m_reactionRequested = true;
         this->m_childEventQueue.push(child);
-
-        auto director = this->GetDirector();
-        director->ScheduleCallback(
+        this->GetDirector()->ScheduleCallback(
             [this]() { this->ProcessChildEventQueue(); },
             0 /*delayInMilliseconds*/,
             false /*repeat*/,

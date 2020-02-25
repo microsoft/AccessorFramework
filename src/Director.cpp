@@ -17,7 +17,7 @@ Director::Director() :
     m_startTime(this->m_currentLogicalTime),
     m_nextScheduledExecutionTime(DefaultNextExecutionTime),
     m_executionResult(nullptr),
-    m_currentExecutionCancellationToken(nullptr)
+    m_executionCancellationToken(nullptr)
 {
 }
 
@@ -39,7 +39,7 @@ int Director::ScheduleCallback(
     this->QueueScheduledCallback(newCallbackId);
     if (this->m_nextScheduledExecutionTime > newCallback.nextExecutionTimeInMilliseconds)
     {
-        this->CancelNextExecution();
+        this->StopExecution();
         this->m_nextScheduledExecutionTime = newCallback.nextExecutionTimeInMilliseconds;
         this->ScheduleNextExecution();
     }
@@ -85,16 +85,19 @@ void Director::HandlePriorityUpdate(int oldPriority, int newPriority)
     }
 }
 
-void Director::Execute(std::shared_ptr<CancellationToken> executionCancellationToken, int numberOfIterations)
+void Director::Execute(int numberOfIterations)
 {
-    if (this->m_currentExecutionCancellationToken.get() == nullptr || this->m_currentExecutionCancellationToken->IsCanceled())
+    if (this->m_executionCancellationToken.get() == nullptr || this->m_executionCancellationToken->IsCanceled())
     {
         this->ScheduleNextExecution();
     }
 
     auto executionResult = this->m_executionResult;
     int currentIteration = 0;
-    while (!executionCancellationToken->IsCanceled() && executionResult->valid() && (numberOfIterations == 0 || currentIteration < numberOfIterations))
+    while (this->m_executionCancellationToken != nullptr &&
+        !this->m_executionCancellationToken->IsCanceled() &&
+        executionResult->valid() &&
+        (numberOfIterations == 0 || currentIteration < numberOfIterations))
     {
         PRINT_DEBUG("-----NEXT ROUND-----");
         bool wasCanceled = executionResult->get();
@@ -112,7 +115,16 @@ void Director::Execute(std::shared_ptr<CancellationToken> executionCancellationT
         }
     }
 
-    this->CancelNextExecution();
+    this->StopExecution();
+}
+
+void Director::StopExecution()
+{
+    if (this->m_executionCancellationToken.get() != nullptr)
+    {
+        this->m_executionCancellationToken->Cancel();
+        this->m_executionCancellationToken = nullptr;
+    }
 }
 
 long long Director::GetNextQueuedExecutionTime() const
@@ -130,7 +142,7 @@ long long Director::GetNextQueuedExecutionTime() const
 void Director::ScheduleNextExecution()
 {
     long long executionDelayInMilliseconds = std::max<long long>(this->m_nextScheduledExecutionTime - PosixUtcInMilliseconds(), 0LL);
-    this->m_currentExecutionCancellationToken = std::make_shared<CancellationToken>();
+    this->m_executionCancellationToken = std::make_shared<CancellationToken>();
     auto executionPromise = std::make_unique<std::promise<bool>>();
     this->m_executionResult = std::make_shared<std::future<bool>>(executionPromise->get_future());
 
@@ -140,7 +152,13 @@ void Director::ScheduleNextExecution()
         retry = false;
         try
         {
-            std::thread executionThread(&Director::ExecuteInternal, this->shared_from_this(), executionDelayInMilliseconds, std::move(executionPromise), this->m_currentExecutionCancellationToken);
+            std::thread executionThread(
+                &Director::ExecuteInternal,
+                this,
+                executionDelayInMilliseconds,
+                std::move(executionPromise),
+                this->m_executionCancellationToken);
+
             executionThread.detach();
         }
         catch (const std::system_error& e)
@@ -155,15 +173,6 @@ void Director::ScheduleNextExecution()
             }
         }
     } while (retry);
-}
-
-void Director::CancelNextExecution()
-{
-    if (this->m_currentExecutionCancellationToken.get() != nullptr)
-    {
-        this->m_currentExecutionCancellationToken->Cancel();
-        this->m_currentExecutionCancellationToken = nullptr;
-    }
 }
 
 void Director::ExecuteInternal(long long executionDelayInMilliseconds, std::unique_ptr<std::promise<bool>> executionPromise, std::shared_ptr<CancellationToken> cancellationToken)
@@ -330,7 +339,7 @@ bool Director::NeedsReset() const
 
 void Director::Reset()
 {
-    this->CancelNextExecution();
+    this->StopExecution();
     this->m_callbackQueue.clear();
     this->m_scheduledCallbacks.clear();
     this->m_nextCallbackId = 0;

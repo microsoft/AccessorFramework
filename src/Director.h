@@ -24,7 +24,7 @@
 // callbacks to be executed synchronously while making it appear to the accessors as if they execute atomically and
 // concurrently, enabling asynchronous yet coordinated reactions without explicit thread management or locks.
 //
-class Director : public std::enable_shared_from_this<Director>
+class Director
 {
 public:
     Director();
@@ -37,7 +37,8 @@ public:
 
     void ClearScheduledCallback(int callbackId);
     void HandlePriorityUpdate(int oldPriority, int newPriority);
-    void Execute(std::shared_ptr<CancellationToken> executionCancellationToken, int numberOfIterations = 0);
+    void Execute(int numberOfIterations = 0);
+    void StopExecution();
 
 private:
     class ScheduledCallback
@@ -52,7 +53,6 @@ private:
 
     long long GetNextQueuedExecutionTime() const;
     void ScheduleNextExecution();
-    void CancelNextExecution();
     void ExecuteInternal(
         long long executionDelayInMilliseconds,
         std::unique_ptr<std::promise<bool>> executionPromise,
@@ -72,7 +72,7 @@ private:
     long long m_startTime;
     long long m_nextScheduledExecutionTime;
     std::shared_ptr<std::future<bool>> m_executionResult;
-    std::shared_ptr<CancellationToken> m_currentExecutionCancellationToken;
+    std::shared_ptr<CancellationToken> m_executionCancellationToken;
 
     static long long PosixUtcInMilliseconds();
 };
