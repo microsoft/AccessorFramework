@@ -49,7 +49,7 @@ void Accessor::Impl::ResetPriority()
     this->m_priority = DefaultAccessorPriority;
 }
 
-std::shared_ptr<Director> Accessor::Impl::GetDirector() const
+Director* Accessor::Impl::GetDirector() const
 {
     auto myParent = static_cast<CompositeAccessor::Impl*>(this->GetParent());
     if (myParent == nullptr)
@@ -116,8 +116,7 @@ int Accessor::Impl::ScheduleCallback(
     int delayInMilliseconds,
     bool repeat)
 {
-    auto director = this->GetDirector();
-    int callbackId = director->ScheduleCallback(
+    int callbackId = this->GetDirector()->ScheduleCallback(
         callback,
         delayInMilliseconds,
         repeat,
@@ -128,12 +127,7 @@ int Accessor::Impl::ScheduleCallback(
 
 void Accessor::Impl::ClearScheduledCallback(int callbackId)
 {
-    auto director = this->GetDirector();
-    if (director.get() != nullptr)
-    {
-        director->ClearScheduledCallback(callbackId);
-    }
-
+    this->GetDirector()->ClearScheduledCallback(callbackId);
     this->m_callbackIds.erase(callbackId);
 }
 

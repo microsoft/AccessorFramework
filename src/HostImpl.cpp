@@ -14,14 +14,18 @@ static const int HostPriority = UpdateModelPriority + 1;
 Host::Impl::Impl(const std::string& name, Host* container, std::function<void(Accessor&)> initializeFunction) :
     CompositeAccessor::Impl(name, container, initializeFunction),
     m_state(Host::State::NeedsSetup),
-    m_director(std::make_shared<Director>()),
-    m_executionCancellationToken(nullptr),
+    m_director(std::make_unique<Director>()),
     m_nextListenerId(0)
 {
     this->m_priority = HostPriority;
 }
 
-Host::Impl::~Impl() = default;
+Host::Impl::~Impl()
+{
+    this->RemoveAllChildren();
+    this->ClearAllScheduledCallbacks();
+    this->m_director.reset(nullptr);
+}
 
 Host::State Host::Impl::GetState() const
 {
@@ -64,11 +68,10 @@ void Host::Impl::Iterate(int numberOfIterations)
 {
     this->ValidateHostCanRun();
     this->SetState(Host::State::Running);
-    this->m_executionCancellationToken = std::make_shared<CancellationToken>();
 
     try
     {
-        this->m_director->Execute(this->m_executionCancellationToken, numberOfIterations);
+        this->m_director->Execute(numberOfIterations);
     }
     catch (const std::exception& e)
     {
@@ -86,8 +89,7 @@ void Host::Impl::Pause()
         throw std::logic_error("Host is not running");
     }
 
-    this->m_executionCancellationToken->Cancel();
-    this->m_executionCancellationToken = nullptr;
+    this->m_director->StopExecution();
     this->SetState(Host::State::Paused);
 }
 
@@ -120,11 +122,10 @@ void Host::Impl::RunOnCurrentThread()
 {
     this->ValidateHostCanRun();
     this->SetState(Host::State::Running);
-    this->m_executionCancellationToken = std::make_shared<CancellationToken>();
 
     try
     {
-        this->m_director->Execute(this->m_executionCancellationToken);
+        this->m_director->Execute();
     }
     catch (const std::exception& e)
     {
@@ -138,12 +139,7 @@ void Host::Impl::RunOnCurrentThread()
 void Host::Impl::Exit()
 {
     this->SetState(Host::State::Exiting);
-    if (this->m_executionCancellationToken.get() != nullptr)
-    {
-        this->m_executionCancellationToken->Cancel();
-        this->m_executionCancellationToken = nullptr;
-    }
-
+    this->m_director->StopExecution();
     this->SetState(Host::State::Finished);
 }
 
@@ -196,9 +192,9 @@ void Host::Impl::ResetPriority()
     this->ResetChildrenPriorities();
 }
 
-std::shared_ptr<Director> Host::Impl::GetDirector() const
+Director* Host::Impl::GetDirector() const
 {
-    return this->m_director->shared_from_this();
+    return this->m_director.get();
 }
 
 void Host::Impl::ValidateHostCanRun() const
